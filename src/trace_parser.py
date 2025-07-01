@@ -1,7 +1,10 @@
 import re
-from typing import List, Dict
+import json
+from typing import List, Dict, Any
+from langchain.tools import tool
 
-def parse_trace(trace: str) -> List[Dict]:
+
+def parse_trace(trace: str) -> List[Dict[str, Any]]:
     lines = trace.strip().split("\n")
     frames = []
 
@@ -26,6 +29,37 @@ def parse_trace(trace: str) -> List[Dict]:
     return frames
 
 
+@tool
+def trace_parser_tool(trace: str) -> str:
+    """Parses the stack trace and returns it in JSON format."""
+    parsed = parse_trace(trace)
+    return json.dumps(parsed, indent=2)
+
+
+def extract_error_info(trace: str) -> Dict[str, str]:
+    lines = trace.strip().split("\n")
+
+    for line in reversed(lines):
+        line = line.strip()
+        if not line:
+            continue
+        match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*Error): (.+)', line)
+        if match:
+            error_type, message = match.groups()
+            return {"errorType": error_type, "message": message}
+        else:
+            return {"errorType": "UnknownError", "message": line}
+    
+    return {"errorType": "UnknownError", "message": ""}
+
+
+@tool
+def error_classifier_tool(trace: str) -> str:
+    "Retrieves error type and message from the stack trace."
+    info = extract_error_info(trace)
+    return json.dumps(info, indent=2)
+
+
 
 if __name__ == "__main__":
     sample_trace = """
@@ -37,6 +71,5 @@ if __name__ == "__main__":
     ZeroDivisionError: division by zero
     """
 
-    parsed = parse_trace(sample_trace)
-    for frame in parsed:
-        print(frame)
+    print(trace_parser_tool.invoke(sample_trace))
+    print(error_classifier_tool.invoke(sample_trace))
