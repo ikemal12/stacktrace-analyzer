@@ -1,18 +1,21 @@
 import json
 from langchain_core.runnables import RunnableLambda
 from trace_parser import trace_parser_tool, error_classifier_tool
+from retriever_tool import retrieve_similar_traces
 
 def analyze_trace(trace: str) -> dict:
     """Analyzes a stack trace and returns frames and errors."""
     parsed_frames_json = trace_parser_tool.invoke(trace)
     error_info_json = error_classifier_tool.invoke(trace)
+    similar_errors = retrieve_similar_traces.invoke(trace)
 
     parsed_frames = json.loads(parsed_frames_json)
     error_info = json.loads(error_info_json)
 
     return {
         "parsedTrace": parsed_frames,
-        "error": error_info
+        "error": error_info,
+        "relatedErrors": similar_errors
     }
 
 pipeline = RunnableLambda(analyze_trace)
