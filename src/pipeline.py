@@ -13,7 +13,12 @@ def analyze_trace(trace: str) -> dict:
     parsed_frames = json.loads(parsed_frames_json)
     error_info = json.loads(error_info_json)
 
-    fix_json = fix_suggester_tool.invoke(json.dumps(error_info))
+    fix_input = {
+        "error": error_info,
+        "relatedErrors": similar_errors
+    }
+
+    fix_json = fix_suggester_tool.invoke(json.dumps(fix_input))
     fix_info = json.loads(fix_json)
 
     return {
