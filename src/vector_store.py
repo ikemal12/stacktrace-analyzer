@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer
+from langchain_core.documents import Document
 import faiss
 import numpy as np
 import os
@@ -15,11 +16,20 @@ def embed_trace(trace: str) -> np.ndarray:
     embedding = model.encode([trace])[0]
     return np.array(embedding, dtype="float32")
 
-def create_index(traces: list[str]):
-    first_vector = embed_trace(traces[0])
-    d = first_vector.shape[0]
+def create_index(traces: list[dict]):
+    vectors = []
+    for item in traces:
+        trace_text = item.get("trace", "")
+        if trace_text.strip():
+            vector = embed_trace(trace_text)
+            vectors.append(vector)
+
+    if not vectors:
+        raise ValueError("No valid trace vectors to index.")
+
+    d = vectors[0].shape[0]
     index = faiss.IndexFlatL2(d)
-    vectors = [first_vector] + [embed_trace(trace) for trace in traces[1:]]
+    index.add(np.stack(vectors)) # type: ignore
 
     with open(METADATA_PATH, 'wb') as f:
         pickle.dump(traces, f)
@@ -33,7 +43,7 @@ def load_index():
         metadata = pickle.load(f)
     return index, metadata
 
-def search_similar_traces(query: str, k: int = 3):
+def search_similar_traces(query: str, k: int = 3) -> list[Document]:
     index, metadata = load_index()
     query_vector = embed_trace(query).reshape(1, -1)
     distances, indices = index.search(query_vector, k)
@@ -41,30 +51,48 @@ def search_similar_traces(query: str, k: int = 3):
     results = []
     for idx in indices[0]:
         if idx < len(metadata):
-            results.append(metadata[idx])
+            trace = metadata[idx]
+            doc = Document(
+                page_content=trace.get("trace", trace),
+                metadata={
+                    "source":trace.get("source", "user_past_error"),
+                    "url": trace.get("url", "")
+                }
+            )
+            results.append(doc)
     return results
 
 
 if __name__ == "__main__":
     example_traces = [
-        """Traceback (most recent call last):
-           File "a.py", line 5, in <module>
-             x = mylist[10]
-         IndexError: list index out of range""",
-
-        """Traceback (most recent call last):
-           File "b.py", line 12, in <module>
-             d = {'a': 1}
-             print(d['z'])
-         KeyError: 'z'""",
-
-        """Traceback (most recent call last):
-           File "c.py", line 8, in <module>
-             result = divide(5, 0)
-           File "c.py", line 3, in divide
-             return a / b
-         ZeroDivisionError: division by zero"""
+        {
+            "trace": """Traceback (most recent call last):
+    File "main.py", line 10, in <module>
+        result = divide(5, 0)
+    File "main.py", line 6, in divide
+        return a / b
+    ZeroDivisionError: division by zero""",
+            "source": "python_docs",
+            "url": "https://docs.python.org/3/library/exceptions.html#ZeroDivisionError"
+        },
+        {
+            "trace": """Traceback (most recent call last):
+    File "main.py", line 12, in <module>
+        item = my_list[10]
+    IndexError: list index out of range""",
+            "source": "user_past_error",
+            "url": ""
+        },
+        {
+            "trace": """Traceback (most recent call last):
+    File "main.py", line 8, in <module>
+        value = d['missing']
+    KeyError: 'missing'""",
+            "source": "python_docs",
+            "url": "https://docs.python.org/3/library/exceptions.html#KeyError"
+        }
     ]
+
 
     create_index(example_traces)
 

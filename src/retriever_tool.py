@@ -2,9 +2,17 @@ from langchain_core.tools import tool
 from vector_store import search_similar_traces
 
 @tool
-def retrieve_similar_traces(trace: str) -> list[str]:
-    """Given a stack trace, return a list of similar past traces."""
-    return search_similar_traces(trace)
+def retrieve_similar_traces(trace: str) -> list[dict]:
+    """Given a stack trace, return a list of similar past traces and their metadata."""
+    docs = search_similar_traces(trace)
+    return [
+        {
+            "snippet": doc.page_content,
+            "sourceType": doc.metadata.get("source", ""),
+            "url": doc.metadata.get("url", ""),
+        }
+        for doc in docs
+    ]
 
 
 if __name__ == "__main__":

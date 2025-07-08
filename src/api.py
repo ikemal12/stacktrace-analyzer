@@ -2,6 +2,11 @@ import graphene
 from graphene import ObjectType, String, Int, List, Field
 from pipeline import analyze_trace
 
+class Source(graphene.ObjectType):
+    snippet = String()
+    sourceType = String()
+    url = String()
+
 class TraceLine(graphene.ObjectType):
     file = String()
     line = Int()
@@ -15,7 +20,7 @@ class Error(graphene.ObjectType):
 class FixSuggestion(graphene.ObjectType):
     summary = String()
     codeExample = String()
-    references = List(String)
+    references = List(Source)
 
 class AnalyzeResult(graphene.ObjectType):
     parsedTrace = List(TraceLine)
