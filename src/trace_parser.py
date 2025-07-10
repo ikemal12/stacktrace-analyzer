@@ -4,6 +4,15 @@ from typing import List, Dict, Any
 from langchain.tools import tool
 
 
+def is_valid_trace(trace: str) -> bool:
+    """Check if the input looks like a valid stack trace."""
+    return (
+        isinstance(trace, str)
+        and "Traceback (most recent call last):" in trace
+        and "File" in trace
+        and "line" in trace
+    )
+
 def parse_trace(trace: str) -> List[Dict[str, Any]]:
     lines = trace.strip().split("\n")
     frames = []
