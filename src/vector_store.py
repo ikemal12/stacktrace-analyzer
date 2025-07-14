@@ -7,8 +7,8 @@ import pickle
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-INDEX_PATH = "data/faiss_index.index"
-METADATA_PATH = "data/metadata.pkl"
+INDEX_PATH = os.path.join(os.path.dirname(__file__), "data", "faiss_index.index")
+METADATA_PATH = os.path.join(os.path.dirname(__file__), "data", "metadata.pkl")
 
 os.makedirs("data", exist_ok=True)
 

@@ -1,22 +1,35 @@
 import json
 import os
-import datetime
+from datetime import datetime, timezone
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 from langchain_core.runnables import RunnableLambda
 from trace_parser import trace_parser_tool, error_classifier_tool, is_valid_trace
 from retriever_tool import retrieve_similar_traces
 from fix_suggester_tool import fix_suggester_tool
+from dotenv import load_dotenv
+load_dotenv()
 
+MONGO_URI = os.environ.get("MONGO_URI")
 LOG_PATH = "logs/trace_log.jsonl"
 os.makedirs("logs", exist_ok=True)
 
+mongo_client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
+mongo_db = mongo_client["stacktrace-analyzer"]  
+mongo_collection = mongo_db["traces"]
+
 def log_trace(trace: str, result: dict):
     entry = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "trace": trace.strip(),
         "result": result
     }
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
+    try:
+        mongo_collection.insert_one(entry)
+    except Exception as e:
+        print(f"Failed to log trace to MongoDB: {e}")
 
 def analyze_trace(trace: str) -> dict:
     """Analyzes a stack trace and returns frames and errors."""
