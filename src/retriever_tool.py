@@ -1,18 +1,36 @@
+import logging
 from langchain_core.tools import tool
 from vector_store import search_similar_traces
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 @tool
 def retrieve_similar_traces(trace: str) -> list[dict]:
     """Given a stack trace, return a list of similar past traces and their metadata."""
-    docs = search_similar_traces(trace)
-    return [
-        {
-            "snippet": doc.page_content,
-            "sourceType": doc.metadata.get("source", ""),
-            "url": doc.metadata.get("url", ""),
-        }
-        for doc in docs
-    ]
+    try:
+        logger.debug(f"Retrieving similar traces for trace of length {len(trace)}")
+        
+        if not trace or not trace.strip():
+            logger.warning("Empty trace provided to retrieve_similar_traces")
+            return []
+        
+        docs = search_similar_traces(trace)
+        results = [
+            {
+                "snippet": doc.page_content,
+                "sourceType": doc.metadata.get("source", ""),
+                "url": doc.metadata.get("url", ""),
+            }
+            for doc in docs
+        ]
+        
+        logger.info(f"Retrieved {len(results)} similar traces")
+        return results
+        
+    except Exception as e:
+        logger.error(f"Failed to retrieve similar traces: {e}")
+        return []
 
 
 if __name__ == "__main__":
