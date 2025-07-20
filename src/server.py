@@ -3,7 +3,7 @@ import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from pipeline import analyze_trace
+from pipeline import analyze_trace, check_mongodb_health
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -29,7 +29,30 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "stacktrace-analyzer"}
+    try:
+        health_status = {
+            "status": "healthy",
+            "service": "stacktrace-analyzer",
+            "timestamp": str(asyncio.get_event_loop().time()),
+            "dependencies": {
+                "mongodb": await check_mongodb_health(),
+                "filesystem": True
+            }
+        }
+        
+        if not health_status["dependencies"]["mongodb"]:
+            health_status["status"] = "degraded"
+            health_status["message"] = "MongoDB unavailable - using file logging only"
+            
+        return health_status
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy", 
+            "service": "stacktrace-analyzer",
+            "error": str(e)
+        }
 
 @app.post("/analyze", response_model=TraceResponse)
 async def analyze_endpoint(request: TraceRequest):
@@ -67,7 +90,7 @@ if __name__ == "__main__":
     import uvicorn
     try:
         logger.info("Starting FastAPI server")
-        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")
     except Exception as e:
         logger.error(f"Failed to start server: {e}")
         raise
