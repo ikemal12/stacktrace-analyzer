@@ -1,5 +1,6 @@
 import graphene
 import logging
+import asyncio
 from graphene import ObjectType, String, Int, List, Field
 from pipeline import analyze_trace
 
@@ -35,7 +36,7 @@ class AnalyzeResult(graphene.ObjectType):
 class Query(ObjectType):
     analyze = Field(AnalyzeResult, trace=String(required=True))
 
-    def resolve_analyze(self, info, trace):
+    async def resolve_analyze(self, info, trace):
         try:
             logger.info(f"GraphQL analyze request received for trace of length {len(trace)}")
             
@@ -48,7 +49,7 @@ class Query(ObjectType):
                     "fixSuggestion": {"summary": "", "codeExample": "", "references": []}
                 }
             
-            result = analyze_trace(trace)
+            result = await analyze_trace(trace)
             logger.info("GraphQL analyze request completed successfully")
             return {
                 "parsedTrace": result["parsedTrace"],
