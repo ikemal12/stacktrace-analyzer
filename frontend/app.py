@@ -3,6 +3,9 @@ import requests
 import json
 from datetime import datetime
 import time
+import os
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8001")
 
 st.set_page_config(
     page_title="Stack Trace Analyzer",
@@ -14,7 +17,7 @@ st.set_page_config(
 def check_api_health():
     """Check if the API is running"""
     try:
-        response = requests.get("http://localhost:8001/health", timeout=5)
+        response = requests.get(f"{BACKEND_URL}/health", timeout=5)
         return response.status_code == 200, response.json()
     except Exception:
         return False, None
@@ -23,7 +26,7 @@ def analyze_trace(trace_text):
     """Send trace to API for analysis"""
     try:
         response = requests.post(
-            "http://localhost:8001/analyze",
+            f"{BACKEND_URL}/analyze",
             json={"trace": trace_text},
             timeout=30
         )
@@ -46,7 +49,7 @@ st.markdown("""
 api_status, health_data = check_api_health()
 
 if not api_status:
-    st.error("⚠️ Backend API is not running. Please start the server at `http://localhost:8001`")
+    st.error(f"⚠️ Backend API is not running. Please start the server at `{BACKEND_URL}`")
     st.stop()
 
 
@@ -250,11 +253,11 @@ CODE EXAMPLE:
 
 
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style="text-align: center; color: #666; padding: 1rem;">
     <p>Powered by FastAPI + Streamlit | 
-    <a href="http://localhost:8001/docs" target="_blank">API Docs</a> | 
-    <a href="http://localhost:8001/health" target="_blank">API Health</a>
+    <a href="{BACKEND_URL}/docs" target="_blank">API Docs</a> | 
+    <a href="{BACKEND_URL}/health" target="_blank">API Health</a>
     </p>
 </div>
 """, unsafe_allow_html=True)
