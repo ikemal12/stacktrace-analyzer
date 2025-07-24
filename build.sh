@@ -1,5 +1,6 @@
 echo "Installing Python dependencies..."
 pip install --upgrade pip
+cd /opt/render/project
 pip install -r requirements.txt
 
 echo "Creating necessary directories..."
