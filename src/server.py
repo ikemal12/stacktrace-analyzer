@@ -1,13 +1,5 @@
-import os
-import sys
-from pathlib import Path
-
-current_dir = Path(__file__).parent
-src_dir = current_dir / "src"
-sys.path.insert(0, str(src_dir))
-
-from src.pipeline import analyze_trace, check_mongodb_health
-from src.config import config
+from pipeline import analyze_trace, check_mongodb_health
+from config import config
 import logging
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
