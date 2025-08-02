@@ -1,2 +1,1 @@
-# Render deployment command
-web: cd /opt/render/project && python -m src.server
+web: PYTHONPATH=/opt/render/project/src uvicorn server:app --host 0.0.0.0 --port $PORT
