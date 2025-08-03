@@ -78,10 +78,10 @@ class StackTraceRequest(BaseModel):
     trace: str = Field(..., min_length=1, max_length=50000, description="The stack trace to analyze")
 
 class AnalysisResponse(BaseModel):
-    error_details: dict
-    fix_suggestions: str
-    parsed_trace: list
-    related_errors: list
+    parsedTrace: list
+    error: dict  
+    relatedErrors: list
+    fixSuggestion: dict
     analysis_timestamp: str
     processing_time: float
 
@@ -122,10 +122,10 @@ async def analyze_stack_trace(request: StackTraceRequest):
         processing_time = time.time() - start_time
         
         return AnalysisResponse(
-            error_details=result['error_details'],
-            fix_suggestions=result['fix_suggestions'],
-            parsed_trace=result['parsed_trace'],
-            related_errors=result['related_errors'],
+            parsedTrace=result['parsedTrace'],
+            error=result['error'],
+            relatedErrors=result['relatedErrors'],
+            fixSuggestion=result['fixSuggestion'],
             analysis_timestamp=datetime.now().isoformat(),
             processing_time=processing_time
         )

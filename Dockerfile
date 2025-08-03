@@ -11,9 +11,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
-COPY data/ ./data/
 
-RUN mkdir -p logs
+RUN mkdir -p src/logs src/data
 
 ENV PYTHONPATH=/app
 ENV PORT=8080
